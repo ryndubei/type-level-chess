@@ -1,0 +1,31 @@
+cabal-version:      3.4
+name:               type-level-chess
+version:            0.1.0.0
+-- synopsis:
+-- description:
+license:            AGPL-3.0-or-later
+license-file:       LICENSE
+author:             ryndubei
+maintainer:         114586905+ryndubei@users.noreply.github.com
+-- copyright:
+category:           Game
+build-type:         Simple
+extra-doc-files:    README.md
+-- extra-source-files:
+
+common warnings
+    ghc-options: -Wall -freduction-depth=0
+
+library
+    import:            warnings
+    build-depends:     base ^>=4.20.0.0
+                     , containers
+                     , first-class-families
+                     , singletons
+                     , singletons-th
+                     , singletons-base
+    exposed-modules: , Frog
+                     , Frog.Types
+                     , Frog.Moves
+    hs-source-dirs: src
+    default-language: GHC2021
