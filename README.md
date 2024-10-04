@@ -15,11 +15,11 @@ chess-like game that I named "Frog".
 
 Again, this is very simple, but it suffices for a proof-of-concept.
 It should be possible to "easily" write a full specification of chess by just
-adding extra `Fact`s and moves to use them, while still keeping the same
-structure.
+adding extra `Fact`s and moves to use them (including verifying that the king
+is/isn't in check), while still keeping the same structure.
 
 The way moves are specified takes inspiration from
-(PDDL)[https://en.wikipedia.org/wiki/Planning_Domain_Definition_Language]. A
+[PDDL](https://en.wikipedia.org/wiki/Planning_Domain_Definition_Language). A
 move is defined by constructing a function `Board facts -> Board facts'`, where
 `facts` and `facts'` are collections of `Fact`s about the board state. 
 Pre-conditions in `facts` and post-conditions in `facts'` are encoded using type 
@@ -49,7 +49,7 @@ moveFrog _ _ _ Board = (Board, Board, Board, Board)
 
 ## Related work
 
-The only similar project that I found is (Chesskell: a two player game at the type level)[https://dl.acm.org/doi/pdf/10.1145/3471874.3472987][^1]
+The only similar project that I found is [Chesskell: a two player game at the type level](https://dl.acm.org/doi/pdf/10.1145/3471874.3472987)[^1]
 
 [^1]: Toby Bailey and Michael B. Gale. 2021. Chesskell: A Two-Player Game at the Type Level. In _Proceedings of the 14th ACM SIGPLAN International Haskell Symposium (Haskell ’21), August 26-27, 2021, Virtual, Republic of Korea._ ACM, New York, NY, USA, 12 pages. https://doi.org/10.1145/3471874.3472987
 
