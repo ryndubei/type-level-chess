@@ -1,5 +1,5 @@
 {
-  description = "GHC 9.10 with HLS and cabal";
+  description = "GHC 9.10 with HLS";
   inputs.nixpkgs.url = "nixpkgs/haskell-updates";
   inputs.flake-utils.url = "github:numtide/flake-utils";
 
