@@ -187,21 +187,3 @@ proveNewFactSet :: forall deletes
 proveNewFactSet deletes inserts facts r =
   case singInstance (sDeleteInsert (sing @deletes) (sing @inserts) (sing @facts)) of
     SingInstance -> r
-
-testGame = 
-  let (_,_,a,_) = moveFrog White (Cell A One) (Cell B One) (initialBoard)
-      (_,b,_,_) = moveFrog Black (Cell H Eight) (Cell H Seven) a
-      (_,_,c,_) = moveFrog White (Cell B One) (Cell C One) b
-      (_,d,_,_) = moveFrog Black (Cell H Seven) (Cell H Six) c
-      (_,_,e,_) = moveFrog White (Cell C One) (Cell D One) d
-      (_,f,_,_) = moveFrog Black (Cell H Six) (Cell H Five) e
-      (_,_,g,_) = moveFrog White (Cell D One) (Cell E One) f
-      (_,h,_,_) = moveFrog Black (Cell H Five) (Cell H Four) g
-      (_,_,i,_) = moveFrog White (Cell E One) (Cell F One) h
-      (_,j,_,_) = moveFrog Black (Cell H Four) (Cell H Three) i
-      (_,_,k,_) = moveFrog White (Cell F One) (Cell G One) j
-      (_,l,_,_) = moveFrog Black (Cell H Three) (Cell H Two) k
-      (_,_,m,_) = moveFrog White (Cell G One) (Cell H One) l
-      (_,_,_,n) = moveFrog Black (Cell H Two) (Cell G Two) m
-      (_,_,o,_) = captureFrog White (Cell H One) (Cell G Two) n
-   in o
