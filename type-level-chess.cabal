@@ -27,5 +27,7 @@ library
     exposed-modules: , Frog
                      , Frog.Types
                      , Frog.Moves
+                     , Chess.Types
+                     , Chess.Moves
     hs-source-dirs: src
     default-language: GHC2021
