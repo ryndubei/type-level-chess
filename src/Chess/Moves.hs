@@ -20,20 +20,23 @@ data Board (facts :: FactSet) = Board
 type role Board nominal
 
 type Unthreatened (cell :: Cell) (by :: Colour) (facts :: FactSet) =
-  ( UnthreatenedByKnight cell by facts
-  , UnthreatenedByBishop cell by facts
-  , UnthreatenedByRook cell by facts
-  , UnthreatenedByPawn cell by facts
-  , UnthreatenedByQueen cell by facts
-  , UnthreatenedByKing cell by facts
+  ( UnthreatenedBy Knight cell by facts
+  , UnthreatenedBy Bishop cell by facts
+  , UnthreatenedBy Rook cell by facts
+  , UnthreatenedBy Pawn cell by facts
+  , UnthreatenedBy Queen cell by facts
+  -- Don't need to check this except when moving the king:
+  -- , UnthreatenedByKing cell by facts
   )
 
 -- TODO
-type UnthreatenedByKnight cell by facts = () :: Constraint
-type UnthreatenedByBishop cell by facts = () :: Constraint
-type UnthreatenedByRook cell by facts = () :: Constraint
-type UnthreatenedByPawn cell by facts = () :: Constraint
-type UnthreatenedByQueen cell by facts = () :: Constraint
+type family UnthreatenedBy (piece :: Piece) (cell :: Cell) (by :: Colour) (facts :: FactSet) :: Constraint where
+  UnthreatenedBy Knight cell by facts = ()
+  UnthreatenedBy Bishop cell by facts = ()
+  UnthreatenedBy Rook cell by facts = ()
+  UnthreatenedBy Pawn cell by facts = ()
+  UnthreatenedBy Queen cell by facts = ()
+
 type UnthreatenedByKing cell by facts = () :: Constraint
 
 movePawn1 :: forall (colour :: Colour)
