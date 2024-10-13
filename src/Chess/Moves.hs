@@ -8,12 +8,16 @@ module Chess.Moves
   ( Board
   , movePawn1
   , movePawn2
+  , (:||:)(..)
   )
   where
 
 import Chess.Types
 import Prelude.Singletons
 import Data.Kind
+import Data.Singletons.Base.Enum
+
+import Common.TypeOr
 
 data Board (facts :: FactSet) = Board
 
@@ -81,3 +85,49 @@ movePawn2 :: forall (colour :: Colour)
            => Board facts
            -> Board facts'
 movePawn2 _ _ _ _ Board = Board
+
+capturePawn :: forall (colour :: Colour)
+            -> forall (moveFrom :: Cell)
+            -> forall (moveTo :: Cell)
+            -> forall (kingCell :: Cell)
+            -> forall (opponentPiece :: Piece)
+            -> ( Holds (HasPiece Pawn colour moveFrom) facts
+               , Holds (HasPiece opponentPiece (Opponent colour) moveTo) facts
+               , moveFrom ~ 'Cell hFrom vFrom
+               , moveTo ~ 'Cell hTo vTo
+               , vTo ~ Forward colour vFrom
+               , hTo ~ Rightward hFrom :||: hTo ~ Leftward hFrom
+               , facts' ~ DeleteInsert
+                   [HasPiece opponentPiece (Opponent colour) moveTo, HasPiece Pawn colour moveFrom]
+                   [IsEmpty moveFrom, HasPiece Pawn colour moveTo]
+                   facts
+               , Holds (HasKing colour kingCell) facts
+               , Unthreatened kingCell (Opponent colour) facts'
+               )
+             => Board facts
+             -> Board facts'
+capturePawn _ _ _ _ _ Board = Board
+
+moveKing :: forall (colour :: Colour)
+         -> forall (moveFrom :: Cell)
+         -> forall (moveTo :: Cell)
+         -> ( Holds (HasKing colour moveFrom) facts
+            , Holds (IsEmpty moveTo) facts
+            , moveFrom ~ 'Cell hFrom vFrom
+            , moveTo ~ 'Cell hTo vTo
+            , facts' ~ DeleteInsert
+                [IsEmpty moveTo, HasKing colour moveFrom]
+                [IsEmpty moveFrom, HasKing colour moveTo]
+                facts
+            , ( (hTo ~ Succ hFrom :||: hTo ~ Pred hFrom)
+              , (vTo ~ vFrom :||: vTo ~ Succ vFrom :||: vTo ~ Pred vFrom)
+              )
+              :||:
+              ( (hTo ~ hFrom :||: hTo ~ Succ hFrom :||: hTo ~ Pred hFrom)
+              , (vTo ~ Succ vFrom :||: vTo ~ Pred vFrom)
+              )
+            , Unthreatened kingCell (Opponent colour) facts'
+            )
+         => Board facts
+         -> Board facts'
+moveKing _ _ _ Board = Board

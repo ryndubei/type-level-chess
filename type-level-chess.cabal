@@ -29,5 +29,9 @@ library
                      , Frog.Moves
                      , Chess.Types
                      , Chess.Moves
+                     , Common.TypeOr
+    other-modules:   , Common.TypeOr.Class
+                     , Common.TypeOr.InstanceLeft
+                     , Common.TypeOr.InstanceRight
     hs-source-dirs: src
     default-language: GHC2021
