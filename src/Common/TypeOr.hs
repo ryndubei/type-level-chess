@@ -11,6 +11,7 @@ module Common.TypeOr
   where
 
 import Common.TypeOr.Class
+-- The instances must go in different files because GHC complains otherwise
 import Common.TypeOr.InstanceLeft
 import Common.TypeOr.InstanceRight
 
