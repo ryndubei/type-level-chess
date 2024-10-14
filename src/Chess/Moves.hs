@@ -43,6 +43,11 @@ type family UnthreatenedBy (piece :: Piece) (cell :: Cell) (by :: Colour) (facts
 
 type UnthreatenedByKing cell by facts = () :: Constraint
 
+type ReallyUnthreatened (cell :: Cell) (by :: Colour) (facts :: FactSet) =
+  ( Unthreatened cell by facts
+  , UnthreatenedByKing cell by facts
+  )
+
 movePawn1 :: forall (colour :: Colour)
           -> forall (moveFrom :: Cell)
           -> forall (moveTo :: Cell)
@@ -131,8 +136,34 @@ moveKing :: forall (colour :: Colour)
               ( (hTo ~ hFrom \/ hTo ~ Succ hFrom \/ hTo ~ Pred hFrom)
               , (vTo ~ Succ vFrom \/ vTo ~ Pred vFrom)
               )
-            , Unthreatened kingCell (Opponent colour) facts'
+            , ReallyUnthreatened moveTo (Opponent colour) facts'
             )
          => Board facts
          -> Board facts'
 moveKing _ _ _ Board = Board
+
+captureKing :: forall (colour :: Colour)
+            -> forall (moveFrom :: Cell)
+            -> forall (moveTo :: Cell)
+            -> forall (opponentPiece :: Piece)
+            -> ( Holds (HasKing colour moveFrom) facts
+               , Holds (HasPiece opponentPiece (Opponent colour) moveTo) facts
+               , moveFrom ~ 'Cell hFrom vFrom
+               , moveTo ~ 'Cell hTo vTo
+               , facts' ~ DeleteInsert
+                   [HasPiece opponentPiece (Opponent colour) moveTo, HasKing colour moveFrom]
+                   [IsEmpty moveFrom, HasKing colour moveTo]
+                   facts
+               , ( (hTo ~ Succ hFrom \/ hTo ~ Pred hFrom)
+                 , (vTo ~ vFrom \/ vTo ~ Succ vFrom \/ vTo ~ Pred vFrom)
+                 )
+                 \/
+                 ( (hTo ~ hFrom \/ hTo ~ Succ hFrom \/ hTo ~ Pred hFrom)
+                 , (vTo ~ Succ vFrom \/ vTo ~ Pred vFrom)
+                 )
+               , ReallyUnthreatened moveTo (Opponent colour) facts'
+               )
+             => Board facts
+             -> Board facts'
+captureKing _ _ _ _ Board = Board
+
