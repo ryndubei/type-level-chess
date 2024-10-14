@@ -8,6 +8,8 @@ module Chess.Moves
   ( Board
   , movePawn1
   , movePawn2
+  , moveKing
+  , captureKing
   , module Common.TypeOr
   )
   where
