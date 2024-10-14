@@ -8,7 +8,9 @@ module Chess.Moves
   ( Board
   , movePawn1
   , movePawn2
-  , (:||:)(..)
+  , type (\/)(byCases)
+  , introLeft
+  , introRight
   )
   where
 
@@ -96,7 +98,7 @@ capturePawn :: forall (colour :: Colour)
                , moveFrom ~ 'Cell hFrom vFrom
                , moveTo ~ 'Cell hTo vTo
                , vTo ~ Forward colour vFrom
-               , hTo ~ Rightward hFrom :||: hTo ~ Leftward hFrom
+               , hTo ~ Rightward hFrom \/ hTo ~ Leftward hFrom
                , facts' ~ DeleteInsert
                    [HasPiece opponentPiece (Opponent colour) moveTo, HasPiece Pawn colour moveFrom]
                    [IsEmpty moveFrom, HasPiece Pawn colour moveTo]
@@ -119,12 +121,12 @@ moveKing :: forall (colour :: Colour)
                 [IsEmpty moveTo, HasKing colour moveFrom]
                 [IsEmpty moveFrom, HasKing colour moveTo]
                 facts
-            , ( (hTo ~ Succ hFrom :||: hTo ~ Pred hFrom)
-              , (vTo ~ vFrom :||: vTo ~ Succ vFrom :||: vTo ~ Pred vFrom)
+            , ( (hTo ~ Succ hFrom \/ hTo ~ Pred hFrom)
+              , (vTo ~ vFrom \/ vTo ~ Succ vFrom \/ vTo ~ Pred vFrom)
               )
-              :||:
-              ( (hTo ~ hFrom :||: hTo ~ Succ hFrom :||: hTo ~ Pred hFrom)
-              , (vTo ~ Succ vFrom :||: vTo ~ Pred vFrom)
+              \/
+              ( (hTo ~ hFrom \/ hTo ~ Succ hFrom \/ hTo ~ Pred hFrom)
+              , (vTo ~ Succ vFrom \/ vTo ~ Pred vFrom)
               )
             , Unthreatened kingCell (Opponent colour) facts'
             )

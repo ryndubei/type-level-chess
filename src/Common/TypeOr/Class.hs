@@ -1,8 +1,9 @@
-module Common.TypeOr.Class ((:||:)(..)) where
+{-# LANGUAGE ExplicitNamespaces #-}
+module Common.TypeOr.Class (type (\/)(..)) where
 
 import Data.Kind
 
-class (a :: Constraint) :||: (b :: Constraint) where
+class (a :: Constraint) \/ (b :: Constraint) where
   byCases :: (a => r) -> (b => r) -> r
 
-infixr 3 :||:
+infixr 3 \/
