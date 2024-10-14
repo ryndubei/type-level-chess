@@ -6,6 +6,7 @@
 
 module Chess.Moves
   ( Board
+  , initialBoard
   , movePawn1
   , movePawn2
   , capturePawn
@@ -21,6 +22,8 @@ import Data.Kind
 import Data.Singletons.Base.Enum
 
 import Common.TypeOr
+import qualified Fcf as F
+import qualified Fcf.Data.List as F
 
 data Board (facts :: FactSet) = Board
 
@@ -50,6 +53,28 @@ type ReallyUnthreatened (cell :: Cell) (by :: Colour) (facts :: FactSet) =
   ( Unthreatened cell by facts
   , UnthreatenedByKing cell by facts
   )
+
+-- Helpers for initialBoard
+type CellsOfVertical = ((F.Flip F.Map) (EnumFromTo MinBound MaxBound) F.<=< F.Pure1 (F.Flip (F.Pure2 'Cell)))
+type PawnRankCells (c :: Colour) = F.Eval (CellsOfVertical (PawnRank c))
+type CellsToFacts (f :: Cell -> F.Exp Fact) (cs :: [Cell]) = F.Eval (F.Map f cs)
+type Pawns (c :: Colour) = CellsToFacts (F.Pure1 (HasPiece Pawn c)) (PawnRankCells c)
+
+initialBoard :: ( whitePawns ~ Pawns White
+                , blackPawns ~ Pawns Black
+                , blackKing ~ HasKing Black ('Cell E Eight)
+                , whiteKing ~ HasKing White ('Cell E One)
+                , emptyCells ~ F.Eval (F.ConcatMap CellsOfVertical (EnumFromTo Three Six))
+                , emptyFacts ~ CellsToFacts (F.Pure1 IsEmpty) emptyCells
+                , facts ~ FactSetFromList
+                    ( whitePawns
+                   ++ blackPawns
+                   ++ '[blackKing]
+                   ++ '[whiteKing]
+                   ++ emptyFacts
+                    )
+                ) => Board facts
+initialBoard = Board
 
 movePawn1 :: forall (colour :: Colour)
           -> forall (moveFrom :: Cell)
