@@ -96,6 +96,11 @@ capturePawn :: forall (colour :: Colour)
                , moveFrom ~ 'Cell hFrom vFrom
                , moveTo ~ 'Cell hTo vTo
                , vTo ~ Forward colour vFrom
+               -- Note that we now use an explicit disjunction constraint
+               -- (a, b \/ c) => t
+               -- instead of
+               -- a => (b => t, c => t)
+               -- as in Frog
                , hTo ~ Rightward hFrom \/ hTo ~ Leftward hFrom
                , facts' ~ DeleteInsert
                    [HasPiece opponentPiece (Opponent colour) moveTo, HasPiece Pawn colour moveFrom]
