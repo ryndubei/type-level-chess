@@ -27,6 +27,7 @@ library
     exposed-modules: , Frog
                      , Frog.Types
                      , Frog.Moves
+                     , Chess
                      , Chess.Types
                      , Chess.Moves
                      , Common.TypeOr
