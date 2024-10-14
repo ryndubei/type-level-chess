@@ -1,10 +1,12 @@
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
 {-# LANGUAGE MonoLocalBinds #-}
 {-# LANGUAGE ExplicitNamespaces #-}
+{-# LANGUAGE RequiredTypeArguments #-}
 module Common.TypeOr
-  ( type (\/)(byCases)
+  ( type (\/)
   , introLeft
   , introRight
+  , byCases
   )
   where
 
@@ -12,8 +14,13 @@ import Common.TypeOr.Class
 import Common.TypeOr.InstanceLeft
 import Common.TypeOr.InstanceRight
 
+-- | in all uses of byCases, the type arguments are mandatory,
+-- so we expose this version of the function
+byCases :: forall a -> forall b -> (a \/ b) => (a => r) -> (b => r) -> r
+byCases _ _ = byCases'
+
 -- | example usage
-integralOrShow :: forall x. (Integral x \/ Show x) => x -> String
-integralOrShow x = byCases @(Integral x) @(Show x)
+integralOrShow :: forall t. (Integral t \/ Show t) => t -> String
+integralOrShow x = byCases (Integral t) (Show t)
   (show (toInteger x))
   (show x)
