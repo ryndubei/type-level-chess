@@ -1,6 +1,6 @@
 {
   description = "GHC 9.10 with HLS";
-  inputs.nixpkgs.url = "nixpkgs/haskell-updates";
+  inputs.nixpkgs.url = "nixpkgs/nixos-unstable";
   inputs.flake-utils.url = "github:numtide/flake-utils";
 
   outputs = { self, nixpkgs, flake-utils, ... }:
