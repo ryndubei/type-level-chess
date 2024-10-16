@@ -137,10 +137,7 @@ $(singletonsOnly [d|
   deleteFact fact (FactSet facts) = FactSet $ filter (/= fact) facts
 
   insertFact :: Fact -> FactSet -> FactSet
-  insertFact fact (FactSet facts) = 
-    if fact `elem` facts
-      then FactSet facts
-      else FactSet $ fact : facts
+  insertFact fact (FactSet facts) = FactSet $ fact : facts
 
   deleteFacts :: [Fact] -> FactSet -> FactSet
   deleteFacts delFacts facts = foldl' (flip deleteFact) facts delFacts
