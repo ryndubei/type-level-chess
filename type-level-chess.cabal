@@ -31,6 +31,7 @@ library
                      , Chess.Types
                      , Chess.Moves
                      , Common.TypeOr
+                     , Common.TheoremProving
     other-modules:   , Common.TypeOr.Class
                      , Common.TypeOr.InstanceLeft
                      , Common.TypeOr.InstanceRight
