@@ -76,6 +76,28 @@ initialBoard :: ( whitePawns ~ Pawns White
                 ) => Board facts
 initialBoard = Board
 
+data Move (colour :: Colour) (moveFrom :: Cell) (moveTo :: Cell) (facts :: FactSet) (facts' :: FactSet) where
+  MovePawn1 :: ( Holds (HasPiece Pawn colour moveFrom) facts
+               , Holds (IsEmpty moveTo) facts
+               , moveFrom ~ 'Cell hFrom vFrom
+               , moveTo ~ 'Cell hFrom vTo
+               , vTo ~ Forward colour vFrom
+               , 'True ~ If (colour == White)
+                   (vTo < MaxBound vFrom)
+                   (vTo > MinBound vFrom)
+               , facts' ~ DeleteInsert
+                   [IsEmpty moveTo, HasPiece Pawn colour moveFrom]
+                   [IsEmpty moveFrom, HasPiece Pawn colour moveTo]
+                   facts
+               , Holds (HasKing colour kingCell) facts
+               , Unthreatened kingCell (Opponent colour) facts'
+               )
+            => Proxy kingCell -- aughhhhh no visible forall in GADTs yet, see GHC issue !25127
+            -> Move colour moveFrom moveTo facts facts'
+ 
+makeMove :: Move colour moveFrom moveTo facts facts' -> Board facts -> Board facts'
+makeMove !_ Board = Board
+
 movePawn1 :: forall (colour :: Colour)
           -> forall (moveFrom :: Cell)
           -> forall (moveTo :: Cell)
