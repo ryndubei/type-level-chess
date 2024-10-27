@@ -14,6 +14,8 @@ module Chess.Moves
   , captureKing
   , Unthreatened'(..)
   , Threatened'(..)
+  , Move(..)
+  , makeMove
   , module Common.TypeOr
   )
   where

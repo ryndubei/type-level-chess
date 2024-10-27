@@ -20,10 +20,12 @@ library
     import:            warnings
     build-depends:     base ^>=4.20.0.0
                      , containers
+                     , dependent-map
                      , first-class-families
                      , singletons
                      , singletons-th
                      , singletons-base
+                     , some
     exposed-modules: , Frog
                      , Frog.Types
                      , Frog.Moves

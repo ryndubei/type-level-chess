@@ -92,7 +92,9 @@ newtype FactSet = FactSet [Fact]
 
 $(genSingletons [''Horizontal, ''Vertical, ''Cell, ''Fact, ''Colour, ''FactSet, ''Piece])
 
-$(singEqInstances [''Horizontal, ''Vertical, ''Cell, ''Fact, ''Colour, ''Piece])
+$(singEqInstances [''Horizontal, ''Vertical, ''Cell, ''Fact, ''Colour, ''Piece, ''FactSet])
+
+$(singOrdInstances [''Horizontal, ''Vertical, ''Cell, ''Fact, ''Colour, ''Piece, ''FactSet])
 
 $(singEnumInstances [''Horizontal, ''Vertical])
 
