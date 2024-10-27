@@ -12,6 +12,8 @@ module Chess.Moves
   , capturePawn
   , moveKing
   , captureKing
+  , Unthreatened'(..)
+  , Threatened'(..)
   , module Common.TypeOr
   )
   where
@@ -24,10 +26,13 @@ import Data.Singletons.Base.Enum
 import Common.TypeOr
 import qualified Fcf as F
 import qualified Fcf.Data.List as F
+import Data.Void
 
 data Board (facts :: FactSet) = Board
 
 type role Board nominal
+
+type HasKing = HasPiece King
 
 type Unthreatened (cell :: Cell) (by :: Colour) (facts :: FactSet) =
   ( UnthreatenedBy Knight cell by facts
@@ -90,13 +95,41 @@ data Move (colour :: Colour) (moveFrom :: Cell) (moveTo :: Cell) (facts :: FactS
                    [IsEmpty moveFrom, HasPiece Pawn colour moveTo]
                    facts
                , Holds (HasKing colour kingCell) facts
-               , Unthreatened kingCell (Opponent colour) facts'
                )
-            => Proxy kingCell -- aughhhhh no visible forall in GADTs yet, see GHC issue !25127
+            => Unthreatened' kingCell (Opponent colour) facts'
             -> Move colour moveFrom moveTo facts facts'
  
 makeMove :: Move colour moveFrom moveTo facts facts' -> Board facts -> Board facts'
 makeMove !_ Board = Board
+
+-- there is no capture at 'moveTo' by a piece of colour 'by'
+data Unthreatened' (moveTo :: Cell) (by :: Colour) (facts :: FactSet)
+  = forall realPiece. Holds (HasPiece realPiece (Opponent by) moveTo) facts => UnthreatenedActual
+      (Proxy realPiece)
+      (forall moveFrom facts'. Move by moveFrom moveTo facts facts' -> Void)
+  | Holds (IsEmpty moveTo) facts => UnthreatenedHypothetical
+      ( forall moveFrom facts1 facts' hypotheticalPiece.
+        facts1 ~ DeleteInsert '[IsEmpty moveTo] '[HasPiece hypotheticalPiece (Opponent by) moveTo] facts
+      => Move by moveFrom moveTo facts1 facts'
+      -> Void
+      )
+  -- ^ if it's empty, suppose it isn't.
+
+-- there exists a capture at 'moveTo' by a piece of colour 'by'
+data Threatened' (moveTo :: Cell) (by :: Colour) (facts :: FactSet)
+  = forall facts1 hypotheticalPiece facts' moveFrom.
+    ( Holds (IsEmpty moveTo) facts
+    , facts1 ~ DeleteInsert '[IsEmpty moveTo] '[HasPiece hypotheticalPiece (Opponent by) moveTo] facts
+    ) => ThreatenedHypothetical 
+           (Proxy hypotheticalPiece)
+           (Move by moveFrom moveTo facts1 facts')
+  | forall realPiece facts' moveFrom.
+    Holds (HasPiece realPiece (Opponent by) moveTo) facts
+    => ThreatenedActual
+         (Proxy realPiece)
+         (Move by moveFrom moveTo facts facts')
+
+type role Unthreatened' nominal nominal nominal
 
 movePawn1 :: forall (colour :: Colour)
           -> forall (moveFrom :: Cell)
@@ -186,7 +219,7 @@ moveKing :: forall (colour :: Colour)
               ( (hTo ~ hFrom \/ hTo ~ Succ hFrom \/ hTo ~ Pred hFrom)
               , (vTo ~ Succ vFrom \/ vTo ~ Pred vFrom)
               )
-            , ReallyUnthreatened moveTo (Opponent colour) facts'
+            , Unthreatened moveTo (Opponent colour) facts'
             )
          => Board facts
          -> Board facts'
