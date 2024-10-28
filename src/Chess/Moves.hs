@@ -29,6 +29,8 @@ data Board (facts :: FactSet) = Board
 
 type role Board nominal
 
+type HasKing = HasPiece King
+
 type Unthreatened (h :: Horizontal) (v :: Vertical) (target :: Colour) (facts :: FactSet) =
   ( UnthreatenedBy Knight h v target facts
   , UnthreatenedBy Bishop h v target facts
