@@ -108,6 +108,23 @@ makeMove !_ Board = Board
 data Unthreatened' (moveTo :: Cell) (by :: Colour) (facts :: FactSet)
   = forall realPiece. Holds (HasPiece realPiece (Opponent by) moveTo) facts => UnthreatenedActual
       (Proxy realPiece)
+      -- PROBLEM: this is not sound: suppose we have UnthreateendActual (\m -> undefined):
+      -- haskell does not have termination checking and
+      -- we'll likely never call the function used as evidence of the move not existing,
+      -- (because it is supposed to state the move does not exist)
+      -- so we can force an invalid sequence of moves to typecheck by this route,
+      -- and worse yet, it will even be non-bottom at runtime.
+      --
+      -- can:
+      -- - have some kind of "terminating arrow" type (a -|> b) that is
+      -- externally guaranteed to either be bottom itself or never bottom
+      -- regardless of input: would probably require to make an entire DSL to
+      -- do termination checking on within haskell - ideally at compile-time.
+      -- - do something with LinearTypes to force previous proofs of Unthreatened
+      -- to evaluate if we hit a move that we previously claimed to be impossible:
+      -- would require somehow finding all moves in the future that are implied
+      -- to be impossible by some past move being impossible, and then keeping
+      -- track of these moves.
       (forall moveFrom facts'. Move by moveFrom moveTo facts facts' -> Void)
   | Holds (IsEmpty moveTo) facts => UnthreatenedHypothetical
       ( forall moveFrom facts1 facts' hypotheticalPiece.
