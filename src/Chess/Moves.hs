@@ -38,7 +38,7 @@ type Unthreatened (h :: Horizontal) (v :: Vertical) (target :: Colour) (facts ::
   , UnthreatenedBy Pawn h v target facts
   , UnthreatenedBy Queen h v target facts
   -- Don't need to check this except when moving the king:
-  -- , UnthreatenedByKing cell by facts
+  -- , UnthreatenedBy King h v target facts
   )
 
 -- TODO
@@ -48,12 +48,11 @@ type family UnthreatenedBy (piece :: Piece) (h :: Horizontal) (v :: Vertical) (t
   UnthreatenedBy Rook h v target facts = ()
   UnthreatenedBy Pawn h v target facts = ()
   UnthreatenedBy Queen h v target facts = ()
-
-type UnthreatenedByKing h v target facts = () :: Constraint
+  UnthreatenedBy King h v target facts = ()
 
 type ReallyUnthreatened (h :: Horizontal) (v :: Vertical) (target :: Colour) (facts :: FactSet) =
   ( Unthreatened h v target facts
-  , UnthreatenedByKing h v target facts
+  , UnthreatenedBy King h v target facts
   )
 
 -- Helpers for initialBoard
