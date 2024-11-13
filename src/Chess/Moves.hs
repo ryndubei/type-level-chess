@@ -29,6 +29,7 @@ import Common.TypeOr
 import qualified Fcf as F
 import qualified Fcf.Data.List as F
 import Data.Void
+import Common.Terminating
 
 data Board (facts :: FactSet) = Board
 
@@ -129,8 +130,7 @@ data Unthreatened' (moveTo :: Cell) (by :: Colour) (facts :: FactSet)
   | Holds (IsEmpty moveTo) facts => UnthreatenedHypothetical
       ( forall moveFrom facts1 facts' hypotheticalPiece.
         facts1 ~ DeleteInsert '[IsEmpty moveTo] '[HasPiece hypotheticalPiece (Opponent by) moveTo] facts
-      => Move by moveFrom moveTo facts1 facts'
-      -> Void
+      => Move by moveFrom moveTo facts1 facts' -|> Void
       )
   -- ^ if it's empty, suppose it isn't.
 
