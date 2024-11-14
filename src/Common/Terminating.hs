@@ -35,13 +35,26 @@ data TermExpr (c :: Constraint) (ctx :: TypeContext) t where
   TermAppE :: TermExpr c ctx (a -> b) -> TermExpr c ctx a -> TermExpr c ctx b
   TermFreeE :: TermExpr c '[] a -> TermExpr c ctx' a
   TermCoerceE :: (c => t ~ t') => TermExpr c ctx t' -> TermExpr c ctx t
-  TermEntailE :: (c => c') => TermExpr c' ctx t -> TermExpr c ctx t
   TermLitE :: TermLit t -> TermExpr c ctx t
   TermCaseE :: TermExpr c ctx matchTy -> TermCase c ctx resultTy matchTy -> TermExpr c ctx resultTy
 
 data TermCase (c :: Constraint) (ctx :: TypeContext) (resultTy :: Type) (matchTy :: Type) :: Type where
   TermCaseBool :: TermExpr c ctx result -> TermExpr c ctx result -> TermCase c ctx result Bool
   TermCaseEq :: (TermExpr ((a ~ b), c) ctx result) -> TermCase c ctx result (a :~: b)
+
+constrain :: (c' => c) => TermExpr c ctx t -> TermExpr c' ctx t
+constrain e = case e of
+  TermLamE x e' -> TermLamE x (constrain e')
+  TermVarE x -> TermVarE x
+  TermAppE f e' -> TermAppE (constrain f) (constrain e')
+  TermFreeE e' -> TermFreeE (constrain e')
+  TermCoerceE e' -> TermCoerceE (constrain e')
+  TermLitE l -> TermLitE l
+  TermCaseE m c ->
+    let c' = case c of
+          TermCaseBool e1 e2 -> TermCaseBool (constrain e1) (constrain e2)
+          TermCaseEq e1 -> TermCaseEq (constrain e1)
+     in TermCaseE (constrain m) c'
 
 betaReduce :: c => TermExpr c '[] (a -> b) -> TermExpr c '[] a -> TermExpr c '[] b
 betaReduce f e1 =
@@ -53,7 +66,6 @@ betaReduce f e1 =
     TermFreeE f' -> betaReduce f' e1
     TermCaseE m c -> betaReduce (reduceCase m c) e1
     TermCoerceE f' -> betaReduce f' e1
-    TermEntailE f' -> TermEntailE (betaReduce f' (TermEntailE e1))
 
 reduceCase :: c => TermExpr c '[] matchTy -> TermCase c '[] resultTy matchTy -> TermExpr c '[] resultTy
 reduceCase m c = case m of
@@ -65,15 +77,10 @@ reduceCase m c = case m of
   TermLitE (TermLitBool False) -> case c of
     TermCaseBool _ e' -> e'
   TermLitE (TermLitEq Refl) -> case c of
-    TermCaseEq e' -> TermEntailE e'
+    TermCaseEq e' -> constrain e'
   TermCaseE m' c' -> reduceCase (reduceCase m' c') c
   TermFreeE m' -> reduceCase m' c
   TermCoerceE m' -> reduceCase m' c
-  TermEntailE m' ->
-    let c' = case c of
-          TermCaseBool e1 e2 -> TermCaseBool (TermEntailE e1) (TermEntailE e2)
-          TermCaseEq e1 -> TermCaseEq (TermEntailE e1)
-     in TermEntailE (reduceCase m' c')
   TermLamE _ _ -> case c of
 
 -- | Terminating function type
