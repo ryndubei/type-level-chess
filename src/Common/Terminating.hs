@@ -13,7 +13,7 @@ import GHC.TypeLits
 import Data.Kind
 import Data.Type.Equality
 
-newtype TermVar (n :: Symbol) t = TermVar (SSymbol n)
+data TermVar (n :: Symbol) t = TermVar
 
 data TermLit t where
   TermLitBool :: Bool -> TermLit Bool
@@ -30,7 +30,7 @@ type family Lookup (x :: k) (xs :: [(k, v)]) :: Maybe v where
 --
 -- Strict, so either bottom or finite.
 data TermExpr (c :: Constraint) (ctx :: TypeContext) t where
-  TermLamE :: TermVar n t -> (TermExpr c ('(n, a) ': ctx) b) -> (TermExpr c ctx (a -> b))
+  TermLamE :: (Lookup n ctx ~ Nothing) => TermVar n t -> (TermExpr c ('(n, a) ': ctx) b) -> (TermExpr c ctx (a -> b))
   TermVarE :: (Lookup n ctx ~ Just t) => TermVar n t -> TermExpr c ctx t
   TermAppE :: TermExpr c ctx (a -> b) -> TermExpr c ctx a -> TermExpr c ctx b
   TermFreeE :: TermExpr c '[] a -> TermExpr c ctx' a
@@ -59,7 +59,7 @@ constrain e = case e of
 betaReduce :: c => TermExpr c '[] (a -> b) -> TermExpr c '[] a -> TermExpr c '[] b
 betaReduce f e1 =
   case f of
-    TermLamE (TermVar n) e2 -> undefined
+    TermLamE x e2 -> undefined
     TermAppE f' e2 ->
       let f'' = betaReduce f' e2
        in betaReduce f'' e1
@@ -87,8 +87,8 @@ reduceCase m c = case m of
 newtype a -|> b = TermFn (TermExpr () '[] (a -> b))
 
 instance Control.Category.Category (-|>) where
-  id = let x = TermVar (SSymbol @"x") in TermFn $ TermLamE x (TermVarE x)
+  id = let x = TermVar @"x" in TermFn $ TermLamE x (TermVarE x)
   (.) (TermFn f) (TermFn g) =
-    let x = TermVar (SSymbol @"x")
+    let x = TermVar @"x"
      in TermFn $ TermLamE x (TermAppE (TermFreeE f) (TermAppE (TermFreeE g) (TermVarE x)))
 
