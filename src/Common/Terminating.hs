@@ -1,18 +1,14 @@
-{-# LANGUAGE ExplicitNamespaces #-}
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE RequiredTypeArguments #-}
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE TypeOperators #-}
 module Common.Terminating (type (-|>)(..), TermExpr(..), TermExprArgs, evaluate, constrain) where
 
 import qualified Control.Category
 import Data.Kind
 import Data.Type.Equality
-import Data.List.Singletons (type (++))
 
 -- | Reversed de Bruijin indices: 'TermVarNil' is the most recent bound variable
 data TermVar (ctx :: [Type]) (t :: Type) where
