@@ -18,6 +18,7 @@ data TermVar (ctx :: [Type]) (t :: Type) where
 data TermLit t where
   TermLitBool :: Bool -> TermLit Bool
   TermLitEq :: (a :~: b) -> TermLit (a :~: b)
+  TermLitUnit :: TermLit ()
 
 type family Lookup (x :: k) (xs :: [(k, v)]) :: Maybe v where
   Lookup k '[] = Nothing
@@ -103,6 +104,8 @@ substitute e se =
 data TermCase (c :: Constraint) (ctx :: [Type]) (resultTy :: Type) (matchTy :: Type) :: Type where
   TermCaseBool :: TermExpr c ctx result -> TermExpr c ctx result -> TermCase c ctx result Bool
   TermCaseEq :: (TermExpr ((a ~ b), c) ctx result) -> TermCase c ctx result (a :~: b)
+  -- trivial:
+  -- TermCaseUnit :: TermExpr c ctx result -> TermCase c ctx result ()
 
 constrain :: (c' => c) => TermExpr c ctx t -> TermExpr c' ctx t
 constrain e = case e of
@@ -135,6 +138,7 @@ evaluate :: forall c t. c => TermExpr c '[] t -> TermExprArgs c t
 evaluate (TermLitE l) = case l of
   TermLitBool b -> b
   TermLitEq Refl -> Refl
+  TermLitUnit -> ()
 evaluate (TermAppE f e) = evaluate (betaReduce f e)
 evaluate (TermCoerceE (e :: TermExpr c '[] t')) =
   case (Refl :: t :~: t') of Refl -> evaluate e
@@ -152,6 +156,7 @@ reduceCase m c = case m of
     TermCaseBool _ e' -> e'
   TermLitE (TermLitEq Refl) -> case c of
     TermCaseEq e' -> constrain e'
+  TermLitE TermLitUnit -> case c of
   TermCaseE m' c' -> reduceCase (reduceCase m' c') c
   TermCoerceE m' -> reduceCase m' c
   TermLamE _ -> case c of
