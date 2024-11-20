@@ -29,29 +29,29 @@ data Board (facts :: FactSet) = Board
 
 type role Board nominal
 
-type Unthreatened (h :: Horizontal) (v :: Vertical) (by :: Colour) (facts :: FactSet) =
-  ( UnthreatenedBy Knight h v by facts
-  , UnthreatenedBy Bishop h v by facts
-  , UnthreatenedBy Rook h v by facts
-  , UnthreatenedBy Pawn h v by facts
-  , UnthreatenedBy Queen h v by facts
+type Unthreatened (cell :: Cell) (by :: Colour) (facts :: FactSet) =
+  ( UnthreatenedBy Knight cell by facts
+  , UnthreatenedBy Bishop cell by facts
+  , UnthreatenedBy Rook cell by facts
+  , UnthreatenedBy Pawn cell by facts
+  , UnthreatenedBy Queen cell by facts
   -- Don't need to check this except when moving the king:
   -- , UnthreatenedByKing cell by facts
   )
 
 -- TODO
-type family UnthreatenedBy (piece :: Piece) (h :: Horizontal) (v :: Vertical) (by :: Colour) (facts :: FactSet) :: Constraint where
-  UnthreatenedBy Knight h v by facts = ()
-  UnthreatenedBy Bishop h v by facts = ()
-  UnthreatenedBy Rook h v by facts = ()
-  UnthreatenedBy Pawn h v by facts = ()
-  UnthreatenedBy Queen h v by facts = ()
+type family UnthreatenedBy (piece :: Piece) (cell :: Cell) (by :: Colour) (facts :: FactSet) :: Constraint where
+  UnthreatenedBy Knight cell by facts = ()
+  UnthreatenedBy Bishop cell by facts = ()
+  UnthreatenedBy Rook cell by facts = ()
+  UnthreatenedBy Pawn cell by facts = ()
+  UnthreatenedBy Queen cell by facts = ()
 
-type UnthreatenedByKing h v by facts = () :: Constraint
+type UnthreatenedByKing cell by facts = () :: Constraint
 
-type ReallyUnthreatened (h :: Horizontal) (v :: Vertical) (by :: Colour) (facts :: FactSet) =
-  ( Unthreatened h v by facts
-  , UnthreatenedByKing h v by facts
+type ReallyUnthreatened (cell :: Cell) (by :: Colour) (facts :: FactSet) =
+  ( Unthreatened cell by facts
+  , UnthreatenedByKing cell by facts
   )
 
 -- Helpers for initialBoard
@@ -84,7 +84,6 @@ movePawn1 :: forall (colour :: Colour)
              , Holds (IsEmpty moveTo) facts
              , moveFrom ~ 'Cell hFrom vFrom
              , moveTo ~ 'Cell hFrom vTo
-             , kingCell ~ 'Cell hKing vKing
              , vTo ~ Forward colour vFrom
              , 'True ~ If (colour == White)
                  (vTo < MaxBound vFrom)
@@ -94,7 +93,7 @@ movePawn1 :: forall (colour :: Colour)
                  [IsEmpty moveFrom, HasPiece Pawn colour moveTo]
                  facts
              , Holds (HasKing colour kingCell) facts
-             , Unthreatened hKing vKing (Opponent colour) facts'
+             , Unthreatened kingCell (Opponent colour) facts'
              )
            => Board facts
            -> Board facts'
@@ -108,14 +107,13 @@ movePawn2 :: forall (colour :: Colour)
              , Holds (IsEmpty moveTo) facts
              , moveFrom ~ 'Cell hFrom (PawnRank colour)
              , moveTo ~ 'Cell hFrom vTo
-             , kingCell ~ 'Cell hKing vKing
              , vTo ~ Forward colour (Forward colour (PawnRank colour))
              , facts' ~ DeleteInsert
                  [IsEmpty moveTo, HasPiece Pawn colour moveFrom]
                  [IsEmpty moveFrom, HasPiece Pawn colour moveTo]
                  facts
              , Holds (HasKing colour kingCell) facts
-             , Unthreatened hKing vKing (Opponent colour) facts'
+             , Unthreatened kingCell (Opponent colour) facts'
              )
            => Board facts
            -> Board facts'
@@ -130,7 +128,6 @@ capturePawn :: forall (colour :: Colour)
                , Holds (HasPiece opponentPiece (Opponent colour) moveTo) facts
                , moveFrom ~ 'Cell hFrom vFrom
                , moveTo ~ 'Cell hTo vTo
-               , kingCell ~ 'Cell hKing vKing
                , vTo ~ Forward colour vFrom
                -- Note that we now use an explicit disjunction constraint
                -- (a, b \/ c) => t
@@ -143,7 +140,7 @@ capturePawn :: forall (colour :: Colour)
                    [IsEmpty moveFrom, HasPiece Pawn colour moveTo]
                    facts
                , Holds (HasKing colour kingCell) facts
-               , Unthreatened hKing vKing (Opponent colour) facts'
+               , Unthreatened kingCell (Opponent colour) facts'
                )
              => Board facts
              -> Board facts'
@@ -167,7 +164,7 @@ moveKing :: forall (colour :: Colour)
               ( (hTo ~ hFrom \/ hTo ~ Succ hFrom \/ hTo ~ Pred hFrom)
               , (vTo ~ Succ vFrom \/ vTo ~ Pred vFrom)
               )
-            , ReallyUnthreatened hTo vTo (Opponent colour) facts'
+            , ReallyUnthreatened moveTo (Opponent colour) facts'
             )
          => Board facts
          -> Board facts'
@@ -192,7 +189,7 @@ captureKing :: forall (colour :: Colour)
                  ( (hTo ~ hFrom \/ hTo ~ Succ hFrom \/ hTo ~ Pred hFrom)
                  , (vTo ~ Succ vFrom \/ vTo ~ Pred vFrom)
                  )
-               , ReallyUnthreatened hTo vTo (Opponent colour) facts'
+               , ReallyUnthreatened moveTo (Opponent colour) facts'
                )
              => Board facts
              -> Board facts'
