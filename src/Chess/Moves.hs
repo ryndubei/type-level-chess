@@ -191,6 +191,7 @@ data Threatened' (moveTo :: Cell) (by :: Colour) (facts :: FactSet)
          (Move by moveFrom moveTo facts facts')
 
 type role Unthreatened' nominal nominal nominal
+type role Threatened' nominal nominal nominal
 
 data IsMove (t :: Type) :: F.Exp Bool
 
