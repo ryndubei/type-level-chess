@@ -74,10 +74,12 @@ data Cell = Cell
   }
   deriving (Eq, Ord, Read, Show, Bounded)
 
-data Piece = Pawn | Knight | Bishop | Rook | Queen | King
+-- | We exclude 'King' because it behaves very differently from the other pieces
+data Piece = Pawn | Knight | Bishop | Rook | Queen
 
 data Fact
   = HasPiece Piece Colour Cell
+  | HasKing Colour Cell
   | Unmoved Cell
   | IsEmpty Cell
 
