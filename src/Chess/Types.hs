@@ -74,12 +74,10 @@ data Cell = Cell
   }
   deriving (Eq, Ord, Read, Show, Bounded)
 
--- | We exclude 'King' because it behaves very differently from the other pieces
-data Piece = Pawn | Knight | Bishop | Rook | Queen
+data Piece = Pawn | Knight | Bishop | Rook | Queen | King
 
 data Fact
   = HasPiece Piece Colour Cell
-  | HasKing Colour Cell
   | Unmoved Cell
   | IsEmpty Cell
 
@@ -94,7 +92,9 @@ newtype FactSet = FactSet [Fact]
 
 $(genSingletons [''Horizontal, ''Vertical, ''Cell, ''Fact, ''Colour, ''FactSet, ''Piece])
 
-$(singEqInstances [''Horizontal, ''Vertical, ''Cell, ''Fact, ''Colour, ''Piece])
+$(singEqInstances [''Horizontal, ''Vertical, ''Cell, ''Fact, ''Colour, ''Piece, ''FactSet])
+
+$(singOrdInstances [''Horizontal, ''Vertical, ''Cell, ''Fact, ''Colour, ''Piece, ''FactSet])
 
 $(singEnumInstances [''Horizontal, ''Vertical])
 
