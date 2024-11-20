@@ -25,6 +25,8 @@ import qualified Fcf as F
 import qualified Fcf.Data.List as F
 import Data.Void
 import Common.Terminating
+import qualified Control.Category
+import Data.Kind
 
 data Board (facts :: FactSet) = Board
 
@@ -189,3 +191,21 @@ data Threatened' (moveTo :: Cell) (by :: Colour) (facts :: FactSet)
          (Move by moveFrom moveTo facts facts')
 
 type role Unthreatened' nominal nominal nominal
+
+data IsMove (t :: Type) :: F.Exp Bool
+
+type family IsMove' m where
+  IsMove' (Move _ _ _ _ _) = True
+  IsMove' _ = False
+
+type instance F.Eval (IsMove m) = IsMove' m
+
+-- TODO: TermLiteral instance for Move
+
+-- | Terminating function type
+newtype a -|> b = TermFn (TermExpr IsMove () '[] (a -> b))
+
+instance Control.Category.Category (-|>) where
+  id = TermFn $ TermLamE (TermVarE TermVarNil)
+  (.) (TermFn f) (TermFn g) =
+    TermFn $ TermLamE (TermAppE (weakenRight _ f) (TermAppE (weakenRight _ g) (TermVarE TermVarNil)))

@@ -5,8 +5,8 @@
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE UndecidableInstances #-}
 module Common.Terminating
-  ( type (-|>)(..)
-  , TermExpr(..)
+  ( TermExpr(..)
+  , TermVar(..)
   , TermLiteral(..)
   , IsFunction
   , TermExprArgs
@@ -17,24 +17,24 @@ module Common.Terminating
   , weaken
   ) where
 
-import qualified Control.Category
 import Data.Kind
 import Data.Type.Equality
 import Data.Type.Bool (If)
+import qualified Fcf as F
 
 type family IsFunction (t :: Type) :: Bool where
   IsFunction (a -> b) = 'True
   IsFunction _ = 'False
 
-type family TermExprArgs (c :: Constraint) (f :: Type) :: Type where
-  TermExprArgs c (a -> b) = TermExpr c '[] a -> If (IsFunction b) (TermExprArgs c b) b
+type family TermExprArgs (lits :: Type -> F.Exp Bool) (c :: Constraint) (f :: Type) :: Type where
+  TermExprArgs lits c (a -> b) = TermExpr lits c '[] a -> If (IsFunction b) (TermExprArgs lits c b) b
 
 class IsFunction t ~ 'False => TermLiteral t where
   data TermLit t
-  data TermCase (c :: Constraint) (ctx :: [Type]) resultTy t
-  reduceCaseLit :: TermLit t -> TermCase c '[] resultTy t -> TermExpr c '[] resultTy
+  data TermCase (lits :: Type -> F.Exp Bool) (c :: Constraint) (ctx :: [Type]) resultTy t
+  reduceCaseLit :: TermLit t -> TermCase lits c '[] resultTy t -> TermExpr lits c '[] resultTy
   evaluateLit :: TermLit t -> t
-  traverseCase :: (TermExpr c ctx t -> TermExpr c' ctx' t) -> TermCase c ctx resultTy t -> TermCase c' ctx' resultTy t
+  traverseCase :: (TermExpr lits c ctx t -> TermExpr lits c' ctx' t) -> TermCase lits c ctx resultTy t -> TermCase lits c' ctx' resultTy t
 
 -- | Reversed de Bruijin indices: 'TermVarNil' is the most recent bound variable
 data TermVar (ctx :: [Type]) (t :: Type) where
@@ -57,19 +57,19 @@ data Length (xs :: [k]) where
 -- | Grammar for a simply-typed lambda calculus with `case` and literals.
 --
 -- Strict, so either bottom or finite.
-data TermExpr (c :: Constraint) (ctx :: [Type]) t where
-  TermLamE :: TermExpr c (a ': ctx) b -> TermExpr c ctx (a -> b)
-  TermVarE :: TermVar ctx t -> TermExpr c ctx t
-  TermAppE :: TermExpr c ctx (a -> b) -> TermExpr c ctx a -> TermExpr c ctx b
-  TermCoerceE :: (c => t ~ t') => TermExpr c ctx t' -> TermExpr c ctx t
-  TermLitE :: TermLiteral t => TermLit t -> TermExpr c ctx t
-  TermCaseE :: TermLiteral matchTy => TermExpr c ctx matchTy -> TermCase c ctx resultTy matchTy -> TermExpr c ctx resultTy
+data TermExpr (lits :: Type -> F.Exp Bool) (c :: Constraint) (ctx :: [Type]) t where
+  TermLamE :: TermExpr lits c (a ': ctx) b -> TermExpr lits c ctx (a -> b)
+  TermVarE :: TermVar ctx t -> TermExpr lits c ctx t
+  TermAppE :: TermExpr lits c ctx (a -> b) -> TermExpr lits c ctx a -> TermExpr lits c ctx b
+  TermCoerceE :: (c => t ~ t') => TermExpr lits c ctx t' -> TermExpr lits c ctx t
+  TermLitE :: (TermLiteral t, F.Eval (lits t) ~ 'True) => TermLit t -> TermExpr lits c ctx t
+  TermCaseE :: TermLiteral matchTy => TermExpr lits c ctx matchTy -> TermCase lits c ctx resultTy matchTy -> TermExpr lits c ctx resultTy
 
 revar :: forall t' -> TermVar ctx t -> TermVar (ctx ++ '[t']) t
 revar _ TermVarNil = TermVarNil
 revar t' (TermVarSucc x) = TermVarSucc (revar t' x)
 
-weakenRight :: forall t' -> TermExpr c ctx t -> TermExpr c (ctx ++ '[t']) t
+weakenRight :: forall t' -> TermExpr lits c ctx t -> TermExpr lits c (ctx ++ '[t']) t
 weakenRight t' e = case e of
   TermLamE e' -> TermLamE (weakenRight t' e')
   TermVarE x -> TermVarE (revar t' x)
@@ -78,10 +78,10 @@ weakenRight t' e = case e of
   TermLitE l -> TermLitE l
   TermCaseE m c -> TermCaseE (weakenRight t' m) (traverseCase (weakenRight t') c)
 
-weakenLeft :: forall c ctx t t'. TermExpr c ctx t -> TermExpr c (t' ': ctx) t
+weakenLeft :: forall c ctx t t' lits. TermExpr lits c ctx t -> TermExpr lits c (t' ': ctx) t
 weakenLeft = weaken ctx t' LengthNil
 
-weaken :: forall ctx1 c t. forall ctx2 t' -> Length ctx1 -> TermExpr c (ctx1 ++ ctx2) t -> TermExpr c (ctx1 ++ (t' ': ctx2)) t
+weaken :: forall ctx1 c t lits. forall ctx2 t' -> Length ctx1 -> TermExpr lits c (ctx1 ++ ctx2) t -> TermExpr lits c (ctx1 ++ (t' ': ctx2)) t
 weaken ctx2 t' len e = case e of
   TermLamE e' -> TermLamE (weaken ctx2 t' (LengthSucc len) e')
   TermVarE x -> TermVarE (weakenVar len x)
@@ -95,7 +95,7 @@ weaken ctx2 t' len e = case e of
     weakenVar (LengthSucc _) TermVarNil = TermVarNil
     weakenVar (LengthSucc l) (TermVarSucc x) = TermVarSucc (weakenVar l x)
  
-substitute' :: forall ctx1 c et. forall ctx2 t -> Length ctx1 -> TermExpr c (ctx1 ++ (t ': ctx2)) et -> TermExpr c ctx2 t -> TermExpr c (ctx1 ++ ctx2) et
+substitute' :: forall ctx1 c et lits. forall ctx2 t -> Length ctx1 -> TermExpr lits c (ctx1 ++ (t ': ctx2)) et -> TermExpr lits c ctx2 t -> TermExpr lits c (ctx1 ++ ctx2) et
 substitute' ctx2 t len e se = case e of
   TermLamE e' -> TermLamE (substitute' ctx2 t (LengthSucc len) e' se)
   TermVarE x -> strengthenVar len se x
@@ -104,19 +104,19 @@ substitute' ctx2 t len e se = case e of
   TermLitE l -> TermLitE l
   TermCaseE m c -> TermCaseE (substitute' ctx2 t len m se) (traverseCase (\cc -> substitute' ctx2 t len cc se) c)
   where
-    strengthenVar :: forall ctx1' vt. Length ctx1' -> TermExpr c ctx2 t -> TermVar (ctx1' ++ (t ': ctx2)) vt -> TermExpr c (ctx1' ++ ctx2) vt
+    strengthenVar :: forall ctx1' vt. Length ctx1' -> TermExpr lits c ctx2 t -> TermVar (ctx1' ++ (t ': ctx2)) vt -> TermExpr lits c (ctx1' ++ ctx2) vt
     strengthenVar LengthNil s TermVarNil = s
     strengthenVar LengthNil _ (TermVarSucc x) = TermVarE x
     strengthenVar (LengthSucc _) _ TermVarNil = TermVarE TermVarNil
     strengthenVar (LengthSucc l) s (TermVarSucc x) = weakenLeft $ strengthenVar l s x
 
-substitute :: forall c t ctx et. TermExpr c (t ': ctx) et -> TermExpr c ctx t -> TermExpr c ctx et
+substitute :: forall c t ctx et lits. TermExpr lits c (t ': ctx) et -> TermExpr lits c ctx t -> TermExpr lits c ctx et
 substitute e se =
   let e' = constrain e
       se' = constrain se
    in substitute' ctx t LengthNil e' se'
 
-constrain :: (c' => c) => TermExpr c ctx t -> TermExpr c' ctx t
+constrain :: (c' => c) => TermExpr lits c ctx t -> TermExpr lits c' ctx t
 constrain e = case e of
   TermLamE e' -> TermLamE (constrain e')
   TermVarE x -> TermVarE x
@@ -127,7 +127,7 @@ constrain e = case e of
     let c' = traverseCase constrain c
      in TermCaseE (constrain m) c'
 
-betaReduce :: forall c a b. c => TermExpr c '[] (a -> b) -> TermExpr c '[] a -> TermExpr c '[] b
+betaReduce :: forall c a b lits. c => TermExpr lits c '[] (a -> b) -> TermExpr lits c '[] a -> TermExpr lits c '[] b
 betaReduce f e1 =
   case f of
     TermLamE e2 -> substitute e2 e1
@@ -137,33 +137,24 @@ betaReduce f e1 =
     TermCaseE m c -> betaReduce (reduceCase m c) e1
     TermCoerceE f' -> betaReduce f' e1
 
-evaluate :: forall c t. c => TermExpr c '[] t -> If (IsFunction t) (TermExprArgs c t) t
+evaluate :: forall c t lits. c => TermExpr lits c '[] t -> If (IsFunction t) (TermExprArgs lits c t) t
 evaluate (TermLitE l) = evaluateLit l
 evaluate (TermAppE f e) = evaluate (betaReduce f e)
-evaluate (TermCoerceE (e :: TermExpr c '[] t')) =
+evaluate (TermCoerceE (e :: TermExpr lits c '[] t')) =
   case (Refl :: t :~: t') of Refl -> evaluate e
 evaluate (TermCaseE m c) = evaluate (reduceCase m c)
 evaluate (TermLamE e) = \se -> evaluate (substitute e se)
 
-reduceCase :: forall c matchTy resultTy.
+reduceCase :: forall c lits matchTy resultTy.
               (c, IsFunction matchTy ~ 'False)
-           => TermExpr c '[] matchTy
-           -> TermCase c '[] resultTy matchTy
-           -> TermExpr c '[] resultTy
+           => TermExpr lits c '[] matchTy
+           -> TermCase lits c '[] resultTy matchTy
+           -> TermExpr lits c '[] resultTy
 reduceCase m c = case m of
   TermAppE f' e' ->
     let m' = betaReduce f' e'
      in reduceCase m' c
   TermLitE l -> reduceCaseLit l c
   TermCaseE m' c' -> reduceCase (reduceCase m' c') c
-  TermCoerceE (m' :: TermExpr c '[] matchTy') ->
+  TermCoerceE (m' :: TermExpr lits c '[] matchTy') ->
     case (Refl :: matchTy :~: matchTy') of Refl -> reduceCase m' c
-
--- | Terminating function type
-newtype a -|> b = TermFn (TermExpr () '[] (a -> b))
-
-instance Control.Category.Category (-|>) where
-  id = TermFn $ TermLamE (TermVarE TermVarNil)
-  (.) (TermFn f) (TermFn g) =
-    TermFn $ TermLamE (TermAppE (weakenRight _ f) (TermAppE (weakenRight _ g) (TermVarE TermVarNil)))
-
