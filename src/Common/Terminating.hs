@@ -31,7 +31,9 @@ type family TermExprArgs (lits :: Type -> Type) (c :: Constraint) (f :: Type) ::
 
 class TermLiteral (lit :: Type -> Type) where
   data TermCase lit (c :: Constraint) (ctx :: [Type]) resultTy t
-  noCaseOnFunctions :: TermCase lit c ctx resultTy (a -> b) -> Void
+  noFunctionCase :: TermCase lit c ctx resultTy (a -> b) -> Void
+  noFunctionLits :: lit t -> IsFunction t :~: 'False
+  existsCase :: lit t -> TermCase lit () '[] t t
   reduceCaseLit :: lit t -> TermCase lit c '[] resultTy t -> TermExpr lit c '[] resultTy
   evaluateLit :: lit t -> t
   traverseCase :: (TermExpr lit c ctx t -> TermExpr lit c' ctx' t) -> TermCase lit c ctx resultTy t -> TermCase lit c' ctx' resultTy t
@@ -62,7 +64,7 @@ data TermExpr (lits :: Type -> Type) (c :: Constraint) (ctx :: [Type]) t where
   TermVarE :: TermVar ctx t -> TermExpr lits c ctx t
   TermAppE :: TermExpr lits c ctx (a -> b) -> TermExpr lits c ctx a -> TermExpr lits c ctx b
   TermCoerceE :: (c => t ~ t') => TermExpr lits c ctx t' -> TermExpr lits c ctx t
-  TermLitE :: IsFunction t ~ False => lits t -> TermExpr lits c ctx t
+  TermLitE :: lits t -> TermExpr lits c ctx t
   TermCaseE :: TermExpr lits c ctx matchTy -> TermCase lits c ctx resultTy matchTy -> TermExpr lits c ctx resultTy
 
 revar :: forall t' -> TermVar ctx t -> TermVar (ctx ++ '[t']) t
@@ -136,9 +138,10 @@ betaReduce f e1 =
        in betaReduce f'' e1
     TermCaseE m c -> betaReduce (reduceCase m c) e1
     TermCoerceE f' -> betaReduce f' e1
+    TermLitE l -> absurd $ noFunctionCase (existsCase l)
 
 evaluate :: forall c t lits. (c, TermLiteral lits) => TermExpr lits c '[] t -> If (IsFunction t) (TermExprArgs lits c t) t
-evaluate (TermLitE l) = evaluateLit l
+evaluate (TermLitE l) = case noFunctionLits l of Refl -> evaluateLit l
 evaluate (TermAppE f e) = evaluate (betaReduce f e)
 evaluate (TermCoerceE (e :: TermExpr lits c '[] t')) =
   case (Refl :: t :~: t') of Refl -> evaluate e
@@ -158,4 +161,4 @@ reduceCase m c = case m of
   TermCaseE m' c' -> reduceCase (reduceCase m' c') c
   TermCoerceE (m' :: TermExpr lits c '[] matchTy') ->
     case (Refl :: matchTy :~: matchTy') of Refl -> reduceCase m' c
-  TermLamE _ -> absurd $ noCaseOnFunctions c
+  TermLamE _ -> absurd $ noFunctionCase c

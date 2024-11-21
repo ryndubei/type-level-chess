@@ -27,6 +27,7 @@ import Data.Void
 import Common.Terminating
 import qualified Control.Category
 import Data.Kind
+import Data.Type.Equality ((:~:)(..))
 
 data Board (facts :: FactSet) = Board
 
@@ -201,7 +202,12 @@ data TermLit t where
 instance TermLiteral TermLit where
   -- TODO
   data TermCase TermLit c ctx resultTy t
-  noCaseOnFunctions c = case c of
+  noFunctionCase c = case c of
+  noFunctionLits l = case l of
+    TermLitThreatened _ -> Refl
+    TermLitUnthreatened _ -> Refl
+    TermLitMove _ -> Refl
+  existsCase l = case l of
   reduceCaseLit l c = case c of
   evaluateLit l = case l of
   traverseCase f c = case c of
