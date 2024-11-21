@@ -192,18 +192,21 @@ data Threatened' (moveTo :: Cell) (by :: Colour) (facts :: FactSet)
 
 type role Unthreatened' nominal nominal nominal
 
-data IsMove (t :: Type) :: F.Exp Bool
+data TermLit t where
+  TermLitThreatened :: Threatened' moveTo by facts -> TermLit (Threatened' moveTo by facts)
+  TermLitUnthreatened :: Unthreatened' moveTo by facts -> TermLit (Unthreatened' moveTo by facts)
+  TermLitMove :: Move by moveFrom moveTo facts facts' -> TermLit (Move by moveFrom moveTo facts facts')
 
-type family IsMove' m where
-  IsMove' (Move _ _ _ _ _) = True
-  IsMove' _ = False
-
-type instance F.Eval (IsMove m) = IsMove' m
-
--- TODO: TermLiteral instance for Move
+instance TermLiteral TermLit where
+  -- TODO
+  data TermCase TermLit c ctx resultTy t
+  noCaseOnFunctions c = case c of
+  reduceCaseLit l c = case c of
+  evaluateLit l = case l of
+  traverseCase f c = case c of
 
 -- | Terminating function type
-newtype a -|> b = TermFn (TermExpr IsMove () '[] (a -> b))
+newtype a -|> b = TermFn (TermExpr TermLit () '[] (a -> b))
 
 instance Control.Category.Category (-|>) where
   id = TermFn $ TermLamE (TermVarE TermVarNil)
