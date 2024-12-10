@@ -101,10 +101,10 @@ unsafeRefl = unsafeCoerce Refl
 
 initialBoardInvariant :: InitialFacts BoardInvariant
 initialBoardInvariant = BoardInvariant
-  { pieceAtUnique = \piece1 piece2 colour1 colour2 cell Refl Refl -> (unsafeRefl, unsafeRefl)
-  , kingUnique = \colour cell1 cell2 Refl Refl -> unsafeRefl
-  , ifEmptyNotPiece = \colour cell piece Refl -> unsafeRefl
-  , ifPieceNotEmpty = \colour cell piece Refl -> unsafeRefl
+  { pieceAtUnique = \_ _ _ _ _ _ _ -> (unsafeRefl, unsafeRefl)
+  , kingUnique = \_ _ _ _ _ -> unsafeRefl
+  , ifEmptyNotPiece = \_ _ _ _ -> unsafeRefl
+  , ifPieceNotEmpty = \_ _ _ _ -> unsafeRefl
   , kingExists = \case
       SWhite -> SomeKing Refl (SCell SE SOne)
       SBlack -> SomeKing Refl (SCell SE SEight)
@@ -112,10 +112,10 @@ initialBoardInvariant = BoardInvariant
 
 makeMoveInvariant :: SColour colour -> SCell moveTo -> Move colour moveFrom moveTo facts facts' -> BoardInvariant facts -> BoardInvariant facts'
 makeMoveInvariant sColour sMoveTo !m bi@BoardInvariant{} = BoardInvariant
-  { pieceAtUnique = \piece1 piece2 colour1 colour2 cell Refl Refl -> (unsafeRefl, unsafeRefl)
-  , kingUnique = \colour cell1 cell2 Refl Refl -> unsafeRefl
-  , ifEmptyNotPiece = \colour cell piece Refl -> unsafeRefl
-  , ifPieceNotEmpty = \colour cell piece Refl -> unsafeRefl
+  { pieceAtUnique = \_ _ _ _ _ _ _ -> (unsafeRefl, unsafeRefl)
+  , kingUnique = \_ _ _ _ _ -> unsafeRefl
+  , ifEmptyNotPiece = \_ _ _ _ -> unsafeRefl
+  , ifPieceNotEmpty = \_ _ _ _ -> unsafeRefl
   , kingExists = case m of
       MoveKing{} -> \sColour' ->
         case sColour %~ sColour' of

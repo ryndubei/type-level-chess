@@ -22,13 +22,10 @@ import Prelude.Singletons
 import Data.Singletons.Base.Enum
 
 import Common.TypeOr
-import qualified Fcf as F
-import qualified Fcf.Data.List as F
 import Data.Void
 import Common.Terminating
 import qualified Control.Category
 import Data.Type.Equality ((:~:)(..))
-import Unsafe.Coerce
 
 type HasKing = HasPiece King
 
