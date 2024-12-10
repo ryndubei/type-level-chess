@@ -2,6 +2,10 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeAbstractions #-}
 {-# LANGUAGE ImpredicativeTypes #-}
+{-# LANGUAGE StrictData #-}
+{-# LANGUAGE RequiredTypeArguments #-}
+{-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE PartialTypeSignatures #-}
 module Chess (gameTree) where
 
 import Chess.Moves
@@ -13,7 +17,12 @@ import Data.GADT.Compare
 import Data.Type.Equality
 import Data.Singletons.Decide
 import Data.Ord.Singletons
+import Data.Bool.Singletons (SBool(..))
+import Common.TheoremProving
+import Data.Kind
+import Chess.Board
 
+{-
 data Move' colour facts params
   = forall moveFrom moveTo facts'.
     ( params ~ '(moveFrom, moveTo, facts')
@@ -40,6 +49,7 @@ instance GCompare (Move' colour facts) where
       _ -> case (sCompare moveFrom1 moveFrom2) of
         SGT -> GGT
         _ -> GLT
+-}
 
 data SomeBoard = forall facts. SingI facts => SomeBoard (Board facts)
 
@@ -78,3 +88,51 @@ data GameTree (colour :: Colour) (facts :: FactSet) = GameTree
 
 gameTree :: forall colourToMove facts. (SingI colourToMove, SingI facts) => Board facts -> GameTree colourToMove facts
 gameTree board = GameTree board $ undefined
+
+testFact :: forall fact facts
+         -> (SingI facts, SingI fact)
+         => Either ('True :~: FactHolds fact facts) ('False :~: FactHolds fact facts)
+testFact fact facts = case sFactHolds (sing @fact) (sing @facts) of
+  STrue -> Left Refl
+  SFalse -> Right Refl
+
+tryMove :: forall colour moveFrom moveTo facts facts'.
+           SColour colour
+        -> SCell moveFrom
+        -> SCell moveTo
+        -> SFactSet facts
+        -> SFactSet facts'
+        -> BoardInvariant facts
+        -> Either (Move colour moveFrom moveTo facts facts' -> Void) (Move colour moveFrom moveTo facts facts')
+tryMove sColour sMoveFrom sMoveTo sFacts sFacts' = undefined
+
+contra :: forall (a :: Piece) (b :: Piece). SPiece a -> (a :~: b) -> ((a == b) :~: 'False) -> Void
+contra sA Refl Refl = case sA of
+
+tryMoveWithPiece :: forall colour moveFrom moveTo facts facts' piece.
+                    SColour colour
+                 -> SCell moveFrom
+                 -> SCell moveTo
+                 -> SFactSet facts
+                 -> SFactSet facts'
+                 -> SPiece piece
+                 -> BoardInvariant facts
+                 -> ( -- we have a piece of the right type at this cell
+                      Holds (HasPiece piece colour moveFrom) facts
+                      -- and there is no other type of piece here
+                    --, forall piece'. Holds (HasPiece piece' colour moveFrom) facts => piece ~ piece'
+                    )
+                 => Either (Move colour moveFrom moveTo facts facts' -> Void) (Move colour moveFrom moveTo facts facts')
+--tryMoveWithPiece sColour sMoveFrom sMoveTo sFacts sFacts' SBishop boardInvariant =
+--  let -- uniq :: forall p -> (FactHolds (HasPiece p colour moveFrom) facts :~: 'True) -> (Bishop :~: p)
+--      -- uniq p = fst . pieceAtUnique boardInvariant Bishop p colour colour moveFrom Refl
+--   in Left $ \move -> case move of
+--        MovePawn1 _ -> case uniq Pawn Refl of {}
+--        MovePawn2 _ -> case uniq Pawn Refl of {}
+--        CapturePawn _ _ -> case uniq Pawn Refl of {}
+--        MoveKing _ -> case uniq King Refl of {}
+--        CaptureKing _ _ -> case uniq King Refl of {}
+tryMoveWithPiece sColour sMoveFrom sMoveTo sFacts sFacts' SPawn boardInvariant =
+  let -- uniq :: forall p -> (FactHolds (HasPiece p colour moveFrom) facts :~: 'True) -> (Bishop :~: p)
+      -- uniq p = fst . pieceAtUnique boardInvariant Bishop p colour colour moveFrom Refl
+   in undefined

@@ -6,13 +6,14 @@
 {-# LANGUAGE StrictData #-}
 
 module Chess.Moves
-  ( Board
-  , initialBoard
-  , Unthreatened'(..)
+  ( Unthreatened'(..)
   , Threatened'(..)
   , Move(..)
-  , makeMove
+  , HasKing
   , module Common.TypeOr
+  , module Common.Terminating
+  , type (-|>)(..)
+  , TermLit(..)
   )
   where
 
@@ -26,36 +27,10 @@ import qualified Fcf.Data.List as F
 import Data.Void
 import Common.Terminating
 import qualified Control.Category
-import Data.Kind
 import Data.Type.Equality ((:~:)(..))
-
-data Board (facts :: FactSet) = Board
-
-type role Board nominal
+import Unsafe.Coerce
 
 type HasKing = HasPiece King
-
--- Helpers for initialBoard
-type CellsOfVertical = ((F.Flip F.Map) (EnumFromTo MinBound MaxBound) F.<=< F.Pure1 (F.Flip (F.Pure2 'Cell)))
-type PawnRankCells (c :: Colour) = F.Eval (CellsOfVertical (PawnRank c))
-type CellsToFacts (f :: Cell -> F.Exp Fact) (cs :: [Cell]) = F.Eval (F.Map f cs)
-type Pawns (c :: Colour) = CellsToFacts (F.Pure1 (HasPiece Pawn c)) (PawnRankCells c)
-
-initialBoard :: ( whitePawns ~ Pawns White
-                , blackPawns ~ Pawns Black
-                , blackKing ~ HasKing Black ('Cell E Eight)
-                , whiteKing ~ HasKing White ('Cell E One)
-                , emptyCells ~ F.Eval (F.ConcatMap CellsOfVertical (EnumFromTo Three Six))
-                , emptyFacts ~ CellsToFacts (F.Pure1 IsEmpty) emptyCells
-                , facts ~ FactSetFromList
-                    ( whitePawns
-                   ++ blackPawns
-                   ++ '[blackKing]
-                   ++ '[whiteKing]
-                   ++ emptyFacts
-                    )
-                ) => Board facts
-initialBoard = Board
 
 data Move (colour :: Colour) (moveFrom :: Cell) (moveTo :: Cell) (facts :: FactSet) (facts' :: FactSet) where
   MovePawn1 :: ( Holds (HasPiece Pawn colour moveFrom) facts
@@ -145,9 +120,6 @@ data Move (colour :: Colour) (moveFrom :: Cell) (moveTo :: Cell) (facts :: FactS
               -> Proxy opponentPiece
               -> Move colour moveFrom moveTo facts facts'
 
-makeMove :: Move colour moveFrom moveTo facts facts' -> Board facts -> Board facts'
-makeMove !_ Board = Board
-
 -- there is no capture at 'moveTo' by a piece of colour 'by'
 data Unthreatened' (moveTo :: Cell) (by :: Colour) (facts :: FactSet)
   = forall realPiece. Holds (HasPiece realPiece (Opponent by) moveTo) facts => UnthreatenedActual
@@ -173,7 +145,7 @@ data Unthreatened' (moveTo :: Cell) (by :: Colour) (facts :: FactSet)
   | Holds (IsEmpty moveTo) facts => UnthreatenedHypothetical
       ( forall moveFrom facts1 facts' hypotheticalPiece.
         facts1 ~ DeleteInsert '[IsEmpty moveTo] '[HasPiece hypotheticalPiece (Opponent by) moveTo] facts
-      => Move by moveFrom moveTo facts1 facts' -|> Void
+      => Move by moveFrom moveTo facts1 facts' -> Void
       )
   -- ^ if it's empty, suppose it isn't.
 
